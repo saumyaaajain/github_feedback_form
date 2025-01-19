@@ -59,8 +59,8 @@ exports.handler = async function(event, context) {
         };
 
         const requestBody = {
-            title: issueTitle,
-            body: `### Feedback Submission\n**Submitted By:** ${sanitizedName}\n**Email:** ${email}\n### Message\n${message.trim()}\n---\n\n*Submitted via website feedback form*`,
+            title: "Feedback by "+name,
+            body: `### Feedback Submission\n**Submitted By:** ${name}\n**Email:** ${email}\n### Message\n${message.trim()}\n---\n\n*Submitted via website feedback form*`,
             labels: ['feedback', 'website']
         };
 
@@ -99,7 +99,7 @@ exports.handler = async function(event, context) {
             statusCode: 500,
             body: JSON.stringify({
                 message: 'Failed to submit feedback',
-                error: error.message
+                error: {error: error.message, parsedBody: event.body}
             })
         };
     }
