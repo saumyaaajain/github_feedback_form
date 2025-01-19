@@ -1,5 +1,4 @@
 // netlify/functions/createIssue.js
-
 exports.handler = async function(event, context) {
     // Only allow POST
     if (event.httpMethod !== 'POST') {
@@ -26,8 +25,19 @@ exports.handler = async function(event, context) {
     }
 
     try {
-        // Parse the incoming request body
-        const { name, email, message } = JSON.parse(event.body);
+        // Safely parse the incoming request body
+        let parsedBody;
+        try {
+            parsedBody = JSON.parse(event.body || '{}');
+        } catch (parseError) {
+            console.error('JSON Parse Error:', parseError);
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ message: 'Invalid JSON payload' })
+            };
+        }
+
+        const { name, email, message } = parsedBody;
 
         // Validate input
         if (!name || !email || !message) {
@@ -41,28 +51,27 @@ exports.handler = async function(event, context) {
         const sanitizedName = name.replace(/[^\w\s-]/g, '').trim();
         const issueTitle = `Website Feedback from ${sanitizedName}`.slice(0, 256);
 
-        var myHeaders = new Headers();
-        myHeaders.append("Accept", "application/vnd.github.v3+json");
-        myHeaders.append("Authorization", `Bearer ${GITHUB_TOKEN}`);
-        myHeaders.append("Content-Type", "application/json");
-
-        const body = JSON.stringify({
-            "title": issueTitle,
-            "body": `### Feedback Submission\n**Submitted By:** ${sanitizedName}\n**Email:** ${email}\n### Message\n${message.trim()}\n---\n\n*Submitted via website feedback form*`,
-            "labels": [
-                "feedback",
-                "website"
-            ]
-        });
-
-        var requestOptions = {
-            method: 'POST',
-            headers: myHeaders,
-            body: body,
-            redirect: 'follow'
+        const headers = {
+            'Accept': 'application/vnd.github.v3+json',
+            'Authorization': `Bearer ${GITHUB_TOKEN}`,
+            'Content-Type': 'application/json',
+            'User-Agent': 'Netlify-Functions'
         };
 
-        const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`, requestOptions)
+        const requestBody = {
+            title: issueTitle,
+            body: `### Feedback Submission\n**Submitted By:** ${sanitizedName}\n**Email:** ${email}\n### Message\n${message.trim()}\n---\n\n*Submitted via website feedback form*`,
+            labels: ['feedback', 'website']
+        };
+
+        const response = await fetch(
+            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
+            {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(requestBody)
+            }
+        );
 
         const data = await response.json();
 
@@ -75,7 +84,8 @@ exports.handler = async function(event, context) {
         return {
             statusCode: 200,
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify({
                 message: 'Feedback submitted successfully',
@@ -85,7 +95,6 @@ exports.handler = async function(event, context) {
 
     } catch (error) {
         console.error('Error creating issue:', error);
-
         return {
             statusCode: 500,
             body: JSON.stringify({
