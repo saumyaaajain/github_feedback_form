@@ -35,7 +35,7 @@ const FeedbackForm = () => {
             console.log('Submitting form data:', formData);
 
             // Make the API request
-            const response = await fetch('/.netlify/functions/create-feedback-issue', {
+            const response = await fetch('/.netlify/functions/createIssues', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
