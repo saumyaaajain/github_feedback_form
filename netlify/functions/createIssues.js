@@ -1,10 +1,21 @@
 // netlify/functions/create-issue.js
+const fetch = require('node-fetch');  // Add this if you're using Node.js 16 or lower
 
 exports.handler = async function(event, context) {
+    // Log the incoming request for debugging
+    console.log('Received event:', {
+        httpMethod: event.httpMethod,
+        headers: event.headers,
+        body: event.body
+    });
+
     // Only allow POST requests
     if (event.httpMethod !== 'POST') {
         return {
             statusCode: 405,
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({ error: 'Method not allowed' })
         };
     }
@@ -17,7 +28,10 @@ exports.handler = async function(event, context) {
         console.error('Missing required environment variables');
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Missing required environment variables' })
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ error: 'Server configuration error' })
         };
     }
 
@@ -26,20 +40,47 @@ exports.handler = async function(event, context) {
         if (!event.body) {
             return {
                 statusCode: 400,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ error: 'Request body is required' })
             };
         }
 
-        let { name, email, message } = JSON.parse(event.body);
+        let parsedBody;
+        try {
+            parsedBody = JSON.parse(event.body);
+            console.log('Parsed request body:', parsedBody);
+        } catch (parseError) {
+            console.error('JSON parsing error:', parseError);
+            console.log('Raw body received:', event.body);
+            return {
+                statusCode: 400,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    error: 'Invalid JSON in request body',
+                    details: parseError.message,
+                    receivedBody: event.body
+                })
+            };
+        }
+
+        const { name, email, message } = parsedBody;
 
         // Validate required fields
         if (!name || !email || !message) {
             return {
                 statusCode: 400,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ error: 'Name, email, and message are required' })
             };
         }
 
+        console.log('Making GitHub API request...');
         // Create issue
         const response = await fetch(
             `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
@@ -58,7 +99,18 @@ exports.handler = async function(event, context) {
             }
         );
 
-        const data = await response.json();
+        // Log GitHub API response for debugging
+        console.log('GitHub API response status:', response.status);
+        const responseText = await response.text();
+        console.log('GitHub API response body:', responseText);
+
+        let data;
+        try {
+            data = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Error parsing GitHub response:', parseError);
+            throw new Error('Invalid response from GitHub API');
+        }
 
         if (!response.ok) {
             console.error('GitHub API error:', data);
@@ -67,6 +119,9 @@ exports.handler = async function(event, context) {
 
         return {
             statusCode: 201,
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
                 message: 'Feedback submitted successfully',
                 issueUrl: data.html_url
@@ -77,6 +132,9 @@ exports.handler = async function(event, context) {
         console.error('Error:', error);
         return {
             statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
                 error: 'Failed to submit feedback',
                 details: error.message
