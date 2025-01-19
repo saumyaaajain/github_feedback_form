@@ -12,10 +12,13 @@ exports.handler = async function(event, context) {
     // Get environment variables
     const {
         GITHUB_TOKEN,
+        GITHUB_REPO_OWNER,
+        GITHUB_REPO_NAME
     } = process.env;
 
-    // Check if all required environment variables are set
-    if (!GITHUB_TOKEN) {
+    // Check environment variables
+    if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME) {
+        console.error('Missing required environment variables');
         return {
             statusCode: 500,
             body: JSON.stringify({ message: 'Server configuration error' })
@@ -34,29 +37,33 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // Create issue body with formatted feedback
+        // Sanitize and format the issue title
+        const sanitizedName = name.replace(/[^\w\s-]/g, '').trim();
+        const issueTitle = `Website Feedback from ${sanitizedName}`.slice(0, 256);
+
+        // Create issue body
         const issueBody = `
 ### Feedback from Website
 
-**From:** ${name}
+**Submitted By:** ${name}
 **Email:** ${email}
 
-**Message:**
+### Message
 ${message}
 
 ---
-*Submitted via Feedback Form*
-`;
+*Submitted via website feedback form*
+    `.trim();
 
-        // Create the issue using GitHub API
+        // GitHub API request
         const response = await fetch(
-            `https://api.github.com/repos/saumyaaajain/github_feedback_form/issues`,
+            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
             {
                 method: 'POST',
                 headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': `Bearer ${GITHUB_TOKEN}`,
                     'Content-Type': 'application/json',
-                    'User-Agent': 'Netlify-Function'
                 },
                 body: JSON.stringify({
                     title: `Feedback from ${name}`,
@@ -66,12 +73,13 @@ ${message}
             }
         );
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Failed to create GitHub issue');
-        }
-
         const data = await response.json();
+
+        // Check if the response contains an error
+        if (!response.ok) {
+            console.error('GitHub API Error:', data);
+            throw new Error(data.message || 'Failed to create GitHub issue');
+        }
 
         return {
             statusCode: 200,
