@@ -25,36 +25,47 @@ const FeedbackForm = () => {
         setSubmitStatus(null);
 
         try {
+            // Ensure all required fields are filled
+            if (!formData.name || !formData.email || !formData.message) {
+                throw new Error('Please fill in all fields');
+            }
+
             const response = await fetch('/.netlify/functions/createIssue', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData)
+                body: JSON.stringify({
+                    name: formData.name,
+                    email: formData.email,
+                    message: formData.message
+                })
             });
 
             const data = await response.json();
 
-            if (response.ok) {
-                setSubmitStatus({
-                    type: 'success',
-                    message: 'Thanks bestie! Your feedback has been submitted ✨'
-                });
-                // Reset form
-                setFormData({ name: '', email: '', message: '' });
-                // Close modal after 2 seconds
-                setTimeout(() => {
-                    setIsOpen(false);
-                    setSubmitStatus(null);
-                }, 2000);
-            } else {
-                throw new Error(data.message || 'Failed to submit feedback');
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to submit feedback');
             }
+
+            setSubmitStatus({
+                type: 'success',
+                message: 'Thanks bestie! Your feedback has been submitted ✨'
+            });
+
+            // Reset form
+            setFormData({ name: '', email: '', message: '' });
+
+            // Close modal after 2 seconds
+            setTimeout(() => {
+                setIsOpen(false);
+                setSubmitStatus(null);
+            }, 2000);
         } catch (error) {
-            console.error('Error submitting feedback:', error);
+            console.error('Error:', error);
             setSubmitStatus({
                 type: 'error',
-                message: error.message || 'Oops! Something went wrong. Try again?'
+                message: error.message || 'Something went wrong. Please try again.'
             });
         } finally {
             setIsSubmitting(false);

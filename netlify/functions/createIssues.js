@@ -1,75 +1,85 @@
 // netlify/functions/createIssue.js
-exports.handler = async function(event, context) {
-    // Only allow POST
+
+const handler = async (event) => {
+    // Handle preflight requests
+    if (event.httpMethod === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers: {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Access-Control-Allow-Methods': 'POST, OPTIONS'
+            }
+        };
+    }
+
     if (event.httpMethod !== 'POST') {
         return {
             statusCode: 405,
-            body: JSON.stringify({ message: 'Method not allowed' })
+            body: JSON.stringify({ error: 'Method not allowed' })
         };
     }
 
     // Get environment variables
-    const {
-        GITHUB_TOKEN,
-        GITHUB_REPO_OWNER,
-        GITHUB_REPO_NAME
-    } = process.env;
+    const { GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO_NAME } = process.env;
 
-    // Check environment variables
     if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME) {
-        console.error('Missing required environment variables');
         return {
             statusCode: 500,
-            body: JSON.stringify({ message: 'Server configuration error' })
+            body: JSON.stringify({ error: 'Server configuration error' })
         };
     }
 
     try {
-        // Parse the incoming request body
-        let parsedBody;
-        try {
-            parsedBody = JSON.parse(event.body || '{}');
-        } catch (parseError) {
-            console.error('JSON Parse Error:', parseError);
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ message: 'Invalid JSON payload' })
-            };
-        }
+        // Log the raw event body for debugging
+        console.log('Raw event body:', event.body);
 
-        const { name, email, message } = parsedBody;
+        // Parse the request body
+        const { name, email, message } = JSON.parse(event.body);
 
-        // Validate input
+        // Validate required fields
         if (!name || !email || !message) {
             return {
                 statusCode: 400,
-                body: JSON.stringify({ message: 'Name, email, and message are required' })
+                body: JSON.stringify({
+                    error: 'Missing required fields',
+                    required: ['name', 'email', 'message']
+                })
             };
         }
 
+        // Create GitHub issue
         const response = await fetch(
             `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
             {
                 method: 'POST',
                 headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
                     'Accept': 'application/vnd.github.v3+json',
+                    'Authorization': `token ${GITHUB_TOKEN}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     title: `Feedback from ${name}`,
-                    body: `### Feedback Submission\n**Submitted By:** ${name}\n**Email:** ${email}\n### Message\n${message.trim()}\n---\n\n*Submitted via website feedback form*`,
+                    body: `### Feedback Submission
+
+**Submitted By:** ${name}
+**Email:** ${email}
+
+### Message
+${message}
+
+---
+*Submitted via website feedback form*`,
                     labels: ['feedback', 'website']
                 })
             }
         );
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `GitHub API responded with status ${response.status}`);
-        }
-
         const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to create GitHub issue');
+        }
 
         return {
             statusCode: 200,
@@ -84,13 +94,18 @@ exports.handler = async function(event, context) {
         };
 
     } catch (error) {
-        console.error('Error creating issue:', error);
+        console.error('Error:', error);
         return {
             statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
             body: JSON.stringify({
-                message: 'Failed to submit feedback',
                 error: error.message
             })
         };
     }
 };
+
+exports.handler = handler;
