@@ -41,37 +41,28 @@ exports.handler = async function(event, context) {
         const sanitizedName = name.replace(/[^\w\s-]/g, '').trim();
         const issueTitle = `Website Feedback from ${sanitizedName}`.slice(0, 256);
 
-        // Create issue body
-        const issueBody = `
-### Feedback from Website
+        var myHeaders = new Headers();
+        myHeaders.append("Accept", "application/vnd.github.v3+json");
+        myHeaders.append("Authorization", `Bearer ${GITHUB_TOKEN}`);
+        myHeaders.append("Content-Type", "application/json");
 
-**Submitted By:** ${name}
-**Email:** ${email}
+        const body = JSON.stringify({
+            "title": issueTitle,
+            "body": `### Feedback Submission\n**Submitted By:** ${sanitizedName}\n**Email:** ${email}\n### Message\n${message.trim()}\n---\n\n*Submitted via website feedback form*`,
+            "labels": [
+                "feedback",
+                "website"
+            ]
+        });
 
-### Message
-${message}
+        var requestOptions = {
+            method: 'POST',
+            headers: myHeaders,
+            body: body,
+            redirect: 'follow'
+        };
 
----
-*Submitted via website feedback form*
-    `.trim();
-
-        // GitHub API request
-        const response = await fetch(
-            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
-            {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Authorization': `Bearer ${GITHUB_TOKEN}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    title: `Feedback from ${name}`,
-                    body: issueBody,
-                    labels: ['feedback', 'website']
-                })
-            }
-        );
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`, requestOptions)
 
         const data = await response.json();
 
