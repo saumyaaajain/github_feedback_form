@@ -1,72 +1,100 @@
 // netlify/functions/createIssue.js
-const fetch = require('node-fetch');
 
-exports.handler = async (event) => {
+exports.handler = async function(event, context) {
+    // Only allow POST
     if (event.httpMethod !== 'POST') {
         return {
             statusCode: 405,
-            body: JSON.stringify({ message: 'Only POST requests allowed' })
+            body: JSON.stringify({ message: 'Method not allowed' })
         };
     }
 
-    // 1. Parse form data (JSON payload) from the request
-    const { name, email, message } = JSON.parse(event.body);
+    // Get environment variables
+    const {
+        GITHUB_TOKEN,
+        GITHUB_REPO_OWNER,
+        GITHUB_REPO_NAME
+    } = process.env;
 
-    // 2. Prepare the issue title and body
-    const title = `New Feedback from ${name}`;
-    const body = `
-**Name**: ${name}
-**Email**: ${email}
-**Message**: ${message}
-  `;
-
-    // 3. Use your environment variable for the GitHub token
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const REPO_OWNER = process.env.REPO_OWNER;
-    const REPO_NAME = process.env.REPO_NAME;
+    // Check if all required environment variables are set
+    if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME) {
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: 'Server configuration error' })
+        };
+    }
 
     try {
-        // 4. Create the issue
+        // Parse the incoming request body
+        const { name, email, message } = JSON.parse(event.body);
+
+        // Validate input
+        if (!name || !email || !message) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ message: 'Name, email, and message are required' })
+            };
+        }
+
+        // Create issue body with formatted feedback
+        const issueBody = `
+### Feedback from Website
+
+**From:** ${name}
+**Email:** ${email}
+
+**Message:**
+${message}
+
+---
+*Submitted via Feedback Form*
+`;
+
+        // Create the issue using GitHub API
         const response = await fetch(
-            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues`,
+            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
             {
                 method: 'POST',
                 headers: {
                     'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Accept': 'application/vnd.github.v3+json',
                     'Content-Type': 'application/json',
+                    'User-Agent': 'Netlify-Function'
                 },
-                body: JSON.stringify({ title, body })
+                body: JSON.stringify({
+                    title: `Feedback from ${name}`,
+                    body: issueBody,
+                    labels: ['feedback', 'website']
+                })
             }
         );
 
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Error creating issue:', errorData);
-            return {
-                statusCode: response.status,
-                body: JSON.stringify(errorData)
-            };
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to create GitHub issue');
         }
 
         const data = await response.json();
+
         return {
             statusCode: 200,
             headers: {
-                'Access-Control-Allow-Origin': '*', // Enable CORS
-                'Access-Control-Allow-Headers': 'Content-Type',
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                success: true,
-                issueNumber: data.number,
+                message: 'Feedback submitted successfully',
                 issueUrl: data.html_url
             })
         };
-    } catch (err) {
-        console.error('Server error:', err);
+
+    } catch (error) {
+        console.error('Error creating issue:', error);
+
         return {
             statusCode: 500,
-            body: JSON.stringify({ message: 'Server Error', error: err.toString() })
+            body: JSON.stringify({
+                message: 'Failed to submit feedback',
+                error: error.message
+            })
         };
     }
 };

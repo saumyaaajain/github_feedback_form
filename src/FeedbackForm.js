@@ -25,10 +25,7 @@ const FeedbackForm = () => {
         setSubmitStatus(null);
 
         try {
-            const BASE_URL = process.env.NODE_ENV === 'development'
-                ? 'http://localhost:8888'
-                : '';
-            const response = await fetch(`${BASE_URL}/.netlify/functions/createIssue`, {
+            const response = await fetch('/.netlify/functions/createIssue', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -43,17 +40,21 @@ const FeedbackForm = () => {
                     type: 'success',
                     message: 'Thanks bestie! Your feedback has been submitted ✨'
                 });
-                // Reset form after successful submission
+                // Reset form
                 setFormData({ name: '', email: '', message: '' });
                 // Close modal after 2 seconds
-                setTimeout(() => setIsOpen(false), 2000);
+                setTimeout(() => {
+                    setIsOpen(false);
+                    setSubmitStatus(null);
+                }, 2000);
             } else {
-                throw new Error(data.message || 'Something went wrong');
+                throw new Error(data.message || 'Failed to submit feedback');
             }
         } catch (error) {
+            console.error('Error submitting feedback:', error);
             setSubmitStatus({
                 type: 'error',
-                message: 'Oops! Something went wrong. Try again?'
+                message: error.message || 'Oops! Something went wrong. Try again?'
             });
         } finally {
             setIsSubmitting(false);
@@ -65,6 +66,7 @@ const FeedbackForm = () => {
             <button
                 onClick={() => setIsOpen(true)}
                 className="fixed bottom-6 right-6 p-4 rounded-full bg-white bg-opacity-20 backdrop-blur-lg hover:bg-opacity-30 transition-all hover:scale-110 text-white shadow-lg"
+                aria-label="Open feedback form"
             >
                 <MessageSquare className="w-6 h-6" />
             </button>
@@ -78,8 +80,12 @@ const FeedbackForm = () => {
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-xl font-bold text-white">spill the tea sis ✨</h2>
                         <button
-                            onClick={() => setIsOpen(false)}
+                            onClick={() => {
+                                setIsOpen(false);
+                                setSubmitStatus(null);
+                            }}
                             className="text-white hover:opacity-70 transition-opacity"
+                            aria-label="Close feedback form"
                         >
                             <X className="w-6 h-6" />
                         </button>
@@ -102,7 +108,8 @@ const FeedbackForm = () => {
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-4 py-2 rounded-xl bg-white bg-opacity-20 placeholder-white placeholder-opacity-60 text-white border-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all"
+                                disabled={isSubmitting}
+                                className="w-full px-4 py-2 rounded-xl bg-white bg-opacity-20 placeholder-white placeholder-opacity-60 text-white border-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all disabled:opacity-50"
                             />
                         </div>
 
@@ -114,20 +121,22 @@ const FeedbackForm = () => {
                                 value={formData.email}
                                 onChange={handleChange}
                                 required
-                                className="w-full px-4 py-2 rounded-xl bg-white bg-opacity-20 placeholder-white placeholder-opacity-60 text-white border-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all"
+                                disabled={isSubmitting}
+                                className="w-full px-4 py-2 rounded-xl bg-white bg-opacity-20 placeholder-white placeholder-opacity-60 text-white border-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all disabled:opacity-50"
                             />
                         </div>
 
                         <div>
-              <textarea
-                  name="message"
-                  placeholder="what's on your mind?"
-                  value={formData.message}
-                  onChange={handleChange}
-                  required
-                  rows="4"
-                  className="w-full px-4 py-2 rounded-xl bg-white bg-opacity-20 placeholder-white placeholder-opacity-60 text-white border-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all resize-none"
-              />
+                            <textarea
+                                name="message"
+                                placeholder="what's on your mind?"
+                                value={formData.message}
+                                onChange={handleChange}
+                                required
+                                disabled={isSubmitting}
+                                rows="4"
+                                className="w-full px-4 py-2 rounded-xl bg-white bg-opacity-20 placeholder-white placeholder-opacity-60 text-white border-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all resize-none disabled:opacity-50"
+                            />
                         </div>
 
                         <button
