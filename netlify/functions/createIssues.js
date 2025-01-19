@@ -25,7 +25,7 @@ exports.handler = async function(event, context) {
     }
 
     try {
-        // Safely parse the incoming request body
+        // Parse the incoming request body
         let parsedBody;
         try {
             parsedBody = JSON.parse(event.body || '{}');
@@ -47,27 +47,29 @@ exports.handler = async function(event, context) {
             };
         }
 
-        const headers = {
-            'Accept': 'application/vnd.github.v3+json',
-            'Authorization': `Bearer ${GITHUB_TOKEN}`,
-            'Content-Type': 'application/json',
-            'User-Agent': 'Netlify-Functions'
-        };
-
-        const requestBody = {
-            title: "Feedback by "+name,
-            body: `### Feedback Submission\n**Submitted By:** ${name}\n**Email:** ${email}\n### Message\n${message.trim()}\n---\n\n*Submitted via website feedback form*`,
-            labels: ['feedback', 'website']
-        };
-
-        await fetch(
+        const response = await fetch(
             `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
             {
                 method: 'POST',
-                headers: headers,
-                body: JSON.stringify(requestBody)
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: `Feedback from ${name}`,
+                    body: `### Feedback Submission\n**Submitted By:** ${name}\n**Email:** ${email}\n### Message\n${message.trim()}\n---\n\n*Submitted via website feedback form*`,
+                    labels: ['feedback', 'website']
+                })
             }
         );
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `GitHub API responded with status ${response.status}`);
+        }
+
+        const data = await response.json();
 
         return {
             statusCode: 200,
@@ -76,7 +78,8 @@ exports.handler = async function(event, context) {
                 'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify({
-                message: 'Feedback submitted successfully'
+                message: 'Feedback submitted successfully',
+                issueUrl: data.html_url
             })
         };
 
@@ -86,7 +89,7 @@ exports.handler = async function(event, context) {
             statusCode: 500,
             body: JSON.stringify({
                 message: 'Failed to submit feedback',
-                error: error
+                error: error.message
             })
         };
     }
