@@ -18,7 +18,25 @@ exports.handler = async function(event, context) {
     }
 
     try {
-        const { name, email, message } = JSON.parse(event.body);
+        // Check if event.body exists and is not empty
+        if (!event.body) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Request body is empty' })
+            };
+        }
+
+        let parsedBody;
+        try {
+            parsedBody = JSON.parse(event.body);
+        } catch (parseError) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Invalid JSON in request body' })
+            };
+        }
+
+        const { name, email, message } = parsedBody;
 
         // Validate required fields
         if (!name || !email || !message) {
@@ -55,7 +73,7 @@ exports.handler = async function(event, context) {
         return {
             statusCode: 500,
             body: JSON.stringify({
-                error: 'Error creating GitHub issue',
+                error: 'Error creating GitHub issue'+error.message,
                 details: error.message
             })
         };
