@@ -1,0 +1,90 @@
+/* styles/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply antialiased;
+    }
+}
+
+@layer utilities {
+    /* Custom animation keyframes */
+    @keyframes float {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    @keyframes gradient-shift {
+        0% {
+            background-position: 0% 50%;
+        }
+        50% {
+            background-position: 100% 50%;
+        }
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Custom animation classes */
+    .animate-float {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .animate-gradient-shift {
+        animation: gradient-shift 15s ease infinite;
+        background-size: 200% 200%;
+    }
+
+    .animate-fade-in {
+        animation: fade-in 0.5s ease-out forwards;
+    }
+}
+
+/* Custom styles for backdrop blur and glass effect */
+.backdrop-blur-lg {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+/* Add to globals.css */
+* {
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+}

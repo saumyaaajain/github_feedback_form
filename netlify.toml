@@ -1,0 +1,23 @@
+# netlify.toml
+
+[build]
+  # Command to build your React app
+  command = "npm run build"
+
+  # Directory (folder) that gets deployed
+  publish = "build"
+
+# Configure Netlify Functions
+[functions]
+  # Folder where Netlify will look for serverless functions
+  directory = "netlify/functions"
+
+  # Optional: Node bundler to use
+  # node_bundler = "esbuild"
+
+# Optional: Deploy settings or environment variable settings
+[dev]
+  # If you want to run Netlify Dev alongside a React dev server
+  command = "npm start"
+  port = 3000
+  targetPort = 3000
