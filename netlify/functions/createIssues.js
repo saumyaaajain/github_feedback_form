@@ -55,8 +55,8 @@ exports.handler = async function(event, context) {
         const response = await octokit.issues.create({
             owner: GITHUB_REPO_OWNER,
             repo: GITHUB_REPO_NAME,
-            title: `Feedback from ${name}`,
-            body: `From: ${name} (${email})\n\n${message}`,
+            title: `Feedback from ABC`,
+            body: `From: ABC (abc@a.com)\n\nTest hardcoded form feedback`,
             labels: ['feedback']
         });
 
