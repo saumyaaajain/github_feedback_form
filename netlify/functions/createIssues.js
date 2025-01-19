@@ -64,7 +64,7 @@ exports.handler = async function(event, context) {
             labels: ['feedback', 'website']
         };
 
-        const response = await fetch(
+        await fetch(
             `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
             {
                 method: 'POST',
@@ -73,14 +73,6 @@ exports.handler = async function(event, context) {
             }
         );
 
-        const data = await response.json();
-
-        // Check if the response contains an error
-        if (!response.ok) {
-            console.error('GitHub API Error:', data);
-            throw new Error(data.message || 'Failed to create GitHub issue');
-        }
-
         return {
             statusCode: 200,
             headers: {
@@ -88,8 +80,7 @@ exports.handler = async function(event, context) {
                 'Access-Control-Allow-Origin': '*'
             },
             body: JSON.stringify({
-                message: 'Feedback submitted successfully',
-                issueUrl: data.html_url
+                message: 'Feedback submitted successfully'
             })
         };
 
