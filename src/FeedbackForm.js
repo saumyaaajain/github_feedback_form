@@ -51,7 +51,7 @@ const FeedbackForm = () => {
                 throw new Error(data.message || 'Failed to submit feedback');
             }
         } catch (error) {
-            console.error('Error submitting feedback:', error);
+            console.error('Error submitting feedback:', error.error+" "+error.parsedBody);
             setSubmitStatus({
                 type: 'error',
                 message: error.message || 'Oops! Something went wrong. Try again?'
