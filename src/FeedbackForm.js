@@ -25,7 +25,10 @@ const FeedbackForm = () => {
         setSubmitStatus(null);
 
         try {
-            const response = await fetch('/.netlify/functions/createIssue', {
+            const BASE_URL = process.env.NODE_ENV === 'development'
+                ? 'http://localhost:8888'
+                : '';
+            const response = await fetch(`${BASE_URL}/.netlify/functions/createIssue`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

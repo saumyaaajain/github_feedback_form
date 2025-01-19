@@ -1,23 +1,28 @@
 # netlify.toml
-
 [build]
-  # Command to build your React app
-  command = "CI=false && npm run build --force"
+command = "CI=false && npm run build --force"
+publish = "build"
 
-  # Directory (folder) that gets deployed
-  publish = "build"
-
-# Configure Netlify Functions
 [functions]
-  # Folder where Netlify will look for serverless functions
-  directory = "netlify/functions"
+directory = "netlify/functions"
 
-  # Optional: Node bundler to use
-  # node_bundler = "esbuild"
-
-# Optional: Deploy settings or environment variable settings
 [dev]
-  # If you want to run Netlify Dev alongside a React dev server
-  command = "npm start"
-  port = 3000
-  targetPort = 3000
+command = "npm start"
+port = 3000
+targetPort = 3000
+
+# Add redirects for functions
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+  force = true
+
+# Add CORS headers for API endpoints
+[[headers]]
+  for = "/.netlify/functions/*"
+    [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Origin, X-Requested-With, Content-Type, Accept"
+    Access-Control-Allow-Credentials = "true"
