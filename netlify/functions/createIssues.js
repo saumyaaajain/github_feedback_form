@@ -12,12 +12,10 @@ exports.handler = async function(event, context) {
     // Get environment variables
     const {
         GITHUB_TOKEN,
-        GITHUB_REPO_OWNER,
-        GITHUB_REPO_NAME
     } = process.env;
 
     // Check if all required environment variables are set
-    if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME) {
+    if (!GITHUB_TOKEN) {
         return {
             statusCode: 500,
             body: JSON.stringify({ message: 'Server configuration error' })
@@ -52,7 +50,7 @@ ${message}
 
         // Create the issue using GitHub API
         const response = await fetch(
-            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
+            `https://api.github.com/repos/saumyaaajain/github_feedback_form/issues`,
             {
                 method: 'POST',
                 headers: {
