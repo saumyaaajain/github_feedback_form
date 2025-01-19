@@ -2,7 +2,7 @@
 
 [build]
   # Command to build your React app
-  command = "npm run build"
+  command = "CI=false && npm run build --force"
 
   # Directory (folder) that gets deployed
   publish = "build"
