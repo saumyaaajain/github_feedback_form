@@ -1,5 +1,4 @@
 // netlify/functions/create-issue.js
-const fetch = require('node-fetch');  // Add this if you're using Node.js 16 or lower
 
 exports.handler = async function(event, context) {
     // Log the incoming request for debugging
@@ -81,38 +80,60 @@ exports.handler = async function(event, context) {
         }
 
         console.log('Making GitHub API request...');
-        // Create issue
-        const response = await fetch(
-            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
-            {
-                method: 'POST',
-                headers: {
-                    'Authorization': `token ${GITHUB_TOKEN}`,
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    title: `Feedback from ${name}`,
-                    body: `From: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
-                    labels: ['feedback']
-                })
+
+        // Create issue using native https module
+        const requestBody = JSON.stringify({
+            title: `Feedback from ${name}`,
+            body: `From: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+            labels: ['feedback']
+        });
+
+        // Use native https module
+        const https = require('https');
+
+        const options = {
+            hostname: 'api.github.com',
+            path: `/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
+            method: 'POST',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'Content-Type': 'application/json',
+                'User-Agent': 'Netlify Function'
             }
-        );
+        };
 
-        // Log GitHub API response for debugging
-        console.log('GitHub API response status:', response.status);
-        const responseText = await response.text();
-        console.log('GitHub API response body:', responseText);
+        const githubResponse = await new Promise((resolve, reject) => {
+            const req = https.request(options, (res) => {
+                let data = '';
 
+                res.on('data', (chunk) => {
+                    data += chunk;
+                });
+
+                res.on('end', () => {
+                    resolve({ statusCode: res.statusCode, body: data });
+                });
+            });
+
+            req.on('error', (error) => {
+                reject(error);
+            });
+
+            req.write(requestBody);
+            req.end();
+        });
+
+        // Parse GitHub response
         let data;
         try {
-            data = JSON.parse(responseText);
+            data = JSON.parse(githubResponse.body);
         } catch (parseError) {
             console.error('Error parsing GitHub response:', parseError);
             throw new Error('Invalid response from GitHub API');
         }
 
-        if (!response.ok) {
+        if (githubResponse.statusCode !== 201) {
             console.error('GitHub API error:', data);
             throw new Error(data.message || 'Failed to create GitHub issue');
         }
