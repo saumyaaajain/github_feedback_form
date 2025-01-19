@@ -19,8 +19,8 @@ exports.handler = async (event) => {
 `;
     // 3. Use your environment variable for the GitHub token
     const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const REPO_OWNER = 'your-github-username';
-    const REPO_NAME = 'your-repo-name';
+    const REPO_OWNER = process.env.GITHUB_USER;
+    const REPO_NAME = 'github_feedback_form';
     try {
         // 4. Create the issue
         const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/issues`, {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Heart, MessageCircle, Share2, Music2, Zap, Trash2, TrendingUp } from 'lucide-react';
 import './styles/globals.css'
+import FeedbackForm from "./FeedbackForm";
 
 // Separate data for different tabs
 const defaultPosts = {
@@ -158,7 +159,8 @@ const App = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-400">
+        <>
+            <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-400">
             {/* Header */}
             <div className="sticky top-0 backdrop-blur-lg bg-white bg-opacity-20 p-4">
                 <div className="max-w-lg mx-auto flex justify-between items-center">
@@ -291,6 +293,8 @@ const App = () => {
                 </div>
             </div>
         </div>
+            <FeedbackForm />
+        </>
     );
 };
 

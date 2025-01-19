@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, X, Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from './components/ui/alert';
+import { Alert, AlertDescription } from './Alert';
 
 const FeedbackForm = () => {
     const [isOpen, setIsOpen] = useState(false);
