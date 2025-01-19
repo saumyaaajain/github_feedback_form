@@ -47,10 +47,6 @@ exports.handler = async function(event, context) {
             };
         }
 
-        // Sanitize and format the issue title
-        const sanitizedName = name.replace(/[^\w\s-]/g, '').trim();
-        const issueTitle = `Website Feedback from ${sanitizedName}`.slice(0, 256);
-
         const headers = {
             'Accept': 'application/vnd.github.v3+json',
             'Authorization': `Bearer ${GITHUB_TOKEN}`,
@@ -90,7 +86,7 @@ exports.handler = async function(event, context) {
             statusCode: 500,
             body: JSON.stringify({
                 message: 'Failed to submit feedback',
-                error: {error: error.message, parsedBody: event.body}
+                error: error
             })
         };
     }
