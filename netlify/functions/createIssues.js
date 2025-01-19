@@ -1,14 +1,6 @@
-// netlify/functions/create-feedback-issue.js
-const { Octokit } = require('@octokit/rest');
+// netlify/functions/create-issue.js
 
 exports.handler = async function(event, context) {
-    // Environment variables should be set in Netlify UI
-    const {
-        GITHUB_TOKEN,
-        GITHUB_REPO_OWNER,
-        GITHUB_REPO_NAME
-    } = process.env;
-
     // Only allow POST requests
     if (event.httpMethod !== 'POST') {
         return {
@@ -17,63 +9,76 @@ exports.handler = async function(event, context) {
         };
     }
 
+    // Get environment variables
+    const { GITHUB_TOKEN, GITHUB_REPO_OWNER, GITHUB_REPO_NAME } = process.env;
+
+    // Validate environment variables
+    if (!GITHUB_TOKEN || !GITHUB_REPO_OWNER || !GITHUB_REPO_NAME) {
+        console.error('Missing required environment variables');
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'Missing required environment variables' })
+        };
+    }
+
     try {
-        // Check if event.body exists and is not empty
+        // Parse and validate request body
         if (!event.body) {
             return {
                 statusCode: 400,
-                body: JSON.stringify({ error: 'Request body is empty' })
+                body: JSON.stringify({ error: 'Request body is required' })
             };
         }
 
-        let parsedBody;
-        try {
-            parsedBody = JSON.parse(event.body);
-        } catch (parseError) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Invalid JSON in request body' })
-            };
-        }
-
-        const { name, email, message } = parsedBody;
+        let { name, email, message } = JSON.parse(event.body);
 
         // Validate required fields
         if (!name || !email || !message) {
             return {
                 statusCode: 400,
-                body: JSON.stringify({ error: 'Missing required fields' })
+                body: JSON.stringify({ error: 'Name, email, and message are required' })
             };
         }
 
-        // Initialize Octokit with your token
-        const octokit = new Octokit({
-            auth: GITHUB_TOKEN
-        });
+        // Create issue
+        const response = await fetch(
+            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/issues`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    title: `Feedback from ${name}`,
+                    body: `From: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+                    labels: ['feedback']
+                })
+            }
+        );
 
-        // Create the issue
-        const response = await octokit.issues.create({
-            owner: GITHUB_REPO_OWNER,
-            repo: GITHUB_REPO_NAME,
-            title: `Feedback from ABC`,
-            body: `From: ABC (abc@a.com)\n\nTest hardcoded form feedback`,
-            labels: ['feedback']
-        });
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error('GitHub API error:', data);
+            throw new Error(data.message || 'Failed to create GitHub issue');
+        }
 
         return {
             statusCode: 201,
             body: JSON.stringify({
                 message: 'Feedback submitted successfully',
-                issueUrl: response.data.html_url
+                issueUrl: data.html_url
             })
         };
 
     } catch (error) {
-        console.error('Error creating issue:', error);
+        console.error('Error:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({
-                error: 'Error creating GitHub issue'+error.message,
+                error: 'Failed to submit feedback',
                 details: error.message
             })
         };
