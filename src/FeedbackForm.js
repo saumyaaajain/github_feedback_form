@@ -30,16 +30,12 @@ const FeedbackForm = () => {
                 throw new Error('Please fill in all fields');
             }
 
-            const response = await fetch('/.netlify/functions/createIssue', {
+            const response = await fetch('/.netlify/functions/create-feedback-issue', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    name: formData.name,
-                    email: formData.email,
-                    message: formData.message
-                })
+                body: JSON.stringify(formData)
             });
 
             const data = await response.json();
@@ -50,7 +46,7 @@ const FeedbackForm = () => {
 
             setSubmitStatus({
                 type: 'success',
-                message: 'Thanks bestie! Your feedback has been submitted ✨'
+                message: 'Feedback submitted successfully! Thank you.'
             });
 
             // Reset form
@@ -89,7 +85,7 @@ const FeedbackForm = () => {
             <div className="bg-gradient-to-br from-purple-400 via-pink-300 to-blue-400 p-1 rounded-3xl max-w-md w-full">
                 <div className="bg-white bg-opacity-20 backdrop-blur-lg rounded-3xl p-6 w-full">
                     <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-white">spill the tea sis ✨</h2>
+                        <h2 className="text-xl font-bold text-white">Submit Feedback</h2>
                         <button
                             onClick={() => {
                                 setIsOpen(false);
@@ -115,7 +111,7 @@ const FeedbackForm = () => {
                             <input
                                 type="text"
                                 name="name"
-                                placeholder="your name bestie"
+                                placeholder="Your name"
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
@@ -128,7 +124,7 @@ const FeedbackForm = () => {
                             <input
                                 type="email"
                                 name="email"
-                                placeholder="your email"
+                                placeholder="Your email"
                                 value={formData.email}
                                 onChange={handleChange}
                                 required
@@ -140,7 +136,7 @@ const FeedbackForm = () => {
                         <div>
                             <textarea
                                 name="message"
-                                placeholder="what's on your mind?"
+                                placeholder="Your feedback"
                                 value={formData.message}
                                 onChange={handleChange}
                                 required
@@ -158,10 +154,10 @@ const FeedbackForm = () => {
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    sending...
+                                    Submitting...
                                 </>
                             ) : (
-                                'send it!'
+                                'Submit Feedback'
                             )}
                         </button>
                     </form>
