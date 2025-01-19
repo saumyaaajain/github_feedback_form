@@ -25,7 +25,7 @@ const FeedbackForm = () => {
         setSubmitStatus(null);
 
         try {
-            const response = await fetch('/.netlify/functions/createIssue', {
+            const response = await fetch('/.netlify/functions/get-repo-details', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

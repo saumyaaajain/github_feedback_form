@@ -1,13 +1,15 @@
 // netlify/functions/get-repo-details.js
 exports.handler = async function(event, context) {
     // You would set this in Netlify UI environment variables
-    const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-    const REPO_OWNER = process.env.REPO_OWNER;
-    const REPO_NAME = process.env.REPO_NAME;
+    const {
+        GITHUB_TOKEN,
+        GITHUB_REPO_OWNER,
+        GITHUB_REPO_NAME
+    } = process.env;
 
     try {
         const response = await fetch(
-            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`,
+            `https://api.github.com/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}`,
             {
                 headers: {
                     'Authorization': `token ${GITHUB_TOKEN}`,
